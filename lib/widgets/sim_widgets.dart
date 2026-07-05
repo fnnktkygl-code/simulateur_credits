@@ -105,14 +105,22 @@ class ModeToggle extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      options[i].title,
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5, color: isActive ? SimColors.heroText : SimColors.text),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        options[i].title,
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5, color: isActive ? SimColors.heroText : SimColors.text),
+                      ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      options[i].subtitle,
-                      style: TextStyle(fontSize: 12.5, color: isActive ? SimColors.resultSub : SimColors.muted),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        options[i].subtitle,
+                        style: TextStyle(fontSize: 12.5, color: isActive ? SimColors.resultSub : SimColors.muted),
+                      ),
                     ),
                   ],
                 ),
