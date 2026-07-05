@@ -103,9 +103,12 @@ flutter:
 flutter_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#192028"
+  adaptive_icon_foreground: "assets/logo_transparent.png"
   web:
     generate: true
     image_path: "assets/logo.png"
     background_color: "#192028"
     theme_color: "#192028"
-  image_path: "assets/logo.png"

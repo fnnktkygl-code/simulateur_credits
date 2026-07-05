@@ -536,6 +536,7 @@ class _SimulatorTileState extends State<SimulatorTile> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -545,7 +546,7 @@ class _SimulatorTileState extends State<SimulatorTile> {
                 ),
                 child: Icon(widget.icon, color: SimColors.brassLight, size: 24),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               Text(
                 widget.title,
                 style: const TextStyle(
