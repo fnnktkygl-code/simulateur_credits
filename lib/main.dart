@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,9 +25,9 @@ void main() async {
   
   await FirebaseAppCheck.instance.activate(
     // ignore: deprecated_member_use
-    appleProvider: AppleProvider.appAttest,
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
     // ignore: deprecated_member_use
-    androidProvider: AndroidProvider.playIntegrity,
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
   );
 
   final remoteConfig = FirebaseRemoteConfig.instance;

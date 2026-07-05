@@ -55,9 +55,11 @@ class _DiagnosticResultViewState extends State<DiagnosticResultView> {
         _synthese = res;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Erreur GeminiAdvisorService: $e');
+      debugPrintStack(stackTrace: st);
       setState(() {
-        _error = 'L\'IA est indisponible, affichage des résultats standards.';
+        _error = 'IA indisponible ($e). Affichage des résultats standards.';
         _isLoading = false;
       });
     }

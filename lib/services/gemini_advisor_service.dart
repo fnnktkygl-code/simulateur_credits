@@ -88,7 +88,7 @@ class GeminiAdvisorService {
     
     // Initialize Vertex AI
     final model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-flash-lite-latest',
+      model: 'gemini-1.5-flash',
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: Schema.object(
