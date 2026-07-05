@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../models/fiscalite/baremes_succession_donation.dart';
+import '../config/fiscalite_config.dart';
 
 class ResultatEtape {
   final String label;
@@ -49,12 +50,12 @@ class SuccessionMath {
       
       // Plafond à la valeur de l'usufruit viager si l'âge est fourni
       if (ageUsufruitier != null) {
-        double viagerPct = ReglesFiscalesTransmission.getUsufruitViager(ageUsufruitier);
+        double viagerPct = FiscaliteConfig.getUsufruitViager(ageUsufruitier);
         usufruitPct = min(usufruitPct, viagerPct);
       }
       usufruitPct = min(usufruitPct, 1.0); // Jamais > 100%
     } else if (ageUsufruitier != null) {
-      usufruitPct = ReglesFiscalesTransmission.getUsufruitViager(ageUsufruitier);
+      usufruitPct = FiscaliteConfig.getUsufruitViager(ageUsufruitier);
     } else {
       throw ArgumentError("Il faut fournir soit l'âge, soit la durée temporaire.");
     }
@@ -132,9 +133,8 @@ class SuccessionMath {
     required double donsPasse15Ans,
     required bool exonFamiliale790G,
     required bool exonLogement790ABis,
-    ReglesFiscalesTransmission? regles,
   }) {
-    regles ??= ReglesFiscalesTransmission.actuel;
+    final regles = FiscaliteConfig.actuel;
     
     List<ResultatEtape> etapes = [];
     double abattementTotal = 0;
@@ -185,17 +185,38 @@ class SuccessionMath {
       }
     }
 
-    // Calcul des droits
-    var calcDroits = _appliquerBareme(actifImposable, lienParente, regles);
+    // Calcul des droits avec rappel fiscal (bracket-creep)
+    double donsPasseImposables = max(0.0, donsPasse15Ans - (regles.abattementsPersonnels[lienParente] ?? 0.0));
+    double baseTaxableTotale = actifImposable + donsPasseImposables;
+    
+    var calcDroitsTotal = _appliquerBareme(baseTaxableTotale, lienParente, regles);
+    var calcDroitsDons = _appliquerBareme(donsPasseImposables, lienParente, regles);
+    
+    double droitsDonation = max(0.0, calcDroitsTotal.total - calcDroitsDons.total);
+
+    List<DetailTranche> tranchesAffichees = [];
+    for (int i = 0; i < calcDroitsTotal.tranches.length; i++) {
+       var tTotal = calcDroitsTotal.tranches[i];
+       var tDon = i < calcDroitsDons.tranches.length ? calcDroitsDons.tranches[i] : null;
+       
+       double montantBase = tTotal.baseTaxable - (tDon?.baseTaxable ?? 0.0);
+       double montantDroits = tTotal.montantDroits - (tDon?.montantDroits ?? 0.0);
+       
+       if (montantBase > 0) {
+         tranchesAffichees.add(DetailTranche(montantBase, tTotal.taux, montantDroits));
+       }
+    }
 
     return SimulationResult(
       actifBrut: montantDon,
       abattementsAppliques: abattementTotal,
       actifNetImposable: actifImposable,
-      droitsEstimes: calcDroits.total,
+      droitsEstimes: droitsDonation,
       etapesAbattements: etapes,
-      detailTranches: calcDroits.tranches,
-      avertissement: "Calcul indicatif. Ne prend pas en compte les frais de notaire éventuels.",
+      detailTranches: tranchesAffichees,
+      avertissement: donsPasse15Ans > 0 
+          ? "Le rappel fiscal des donations de moins de 15 ans décale les tranches d'imposition." 
+          : "Calcul indicatif. Ne prend pas en compte les frais de notaire éventuels.",
     );
   }
 
@@ -205,9 +226,8 @@ class SuccessionMath {
     required double partHeritee,
     required bool isSujetHandicap,
     required double donationsPassees15Ans,
-    ReglesFiscalesTransmission? regles,
   }) {
-    regles ??= ReglesFiscalesTransmission.actuel;
+    final regles = FiscaliteConfig.actuel;
     
     // Le conjoint ou partenaire de PACS est totalement exonéré de droits de succession (Art 796-0 bis CGI)
     if (lienParente == LienParente.conjointPacs) {

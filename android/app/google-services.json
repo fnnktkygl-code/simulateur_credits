@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "194892358407",
+    "project_id": "patrimonia-sim",
+    "storage_bucket": "patrimonia-sim.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194892358407:android:2068cf50303685aefa5ba2",
+        "android_client_info": {
+          "package_name": "app.simulateur.simulateur_credits"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnckVSmdSL9ICMS0Qdc1-keJfPQW96gaw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

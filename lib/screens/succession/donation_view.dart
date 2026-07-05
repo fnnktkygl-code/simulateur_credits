@@ -1,68 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/credit_math.dart';
 import '../../core/succession_math.dart';
 import '../../models/fiscalite/baremes_succession_donation.dart';
+import '../../models/fiscalite/donation_entry.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
+import '../../state/app_state.dart';
 
-class DonationView extends StatefulWidget {
-  /// Fourni par [SuccessionScreen] : commun avec la Succession.
+class DonationView extends StatelessWidget {
   final LienParente lien;
-
-  /// Idem : montant déjà transmis dans les 15 dernières années.
   final double historiqueDons;
-
-  /// Appelé quand l'utilisateur choisit de "reporter" cette donation dans
-  /// l'historique partagé, pour que la Succession en tienne compte.
-  final ValueChanged<double> onDonationSimulee;
+  final List<DonationEntry> donations;
+  final void Function(double, int) onDonationSimulee;
+  final void Function(DonationEntry) onDonationSupprimee;
 
   const DonationView({
     super.key,
     required this.lien,
     required this.historiqueDons,
+    required this.donations,
     required this.onDonationSimulee,
+    required this.onDonationSupprimee,
   });
 
   @override
-  State<DonationView> createState() => _DonationViewState();
-}
-
-class _DonationViewState extends State<DonationView> {
-  double _montantDon = 100000;
-  bool _isHandicap = false;
-  bool _exonFamiliale = false;
-  bool _exonLogement = false;
-
-  // Donation avec réserve d'usufruit : seule la nue-propriété est transmise
-  // et taxée — c'est ici que le barème de l'onglet Démembrement est
-  // réellement utilisé, au lieu de rester un onglet isolé.
-  bool _demembrementActif = false;
-  double _ageUsufruitier = 65;
-
-  bool _donationAjoutee = false;
-
-  @override
   Widget build(BuildContext context) {
-    double baseTaxable = _montantDon;
+    final state = context.watch<SuccessionState>();
+    double baseTaxable = state.montantDon;
     Map<String, double>? demembrement;
     
-    if (_demembrementActif) {
+    if (state.demembrementActif) {
       demembrement = SuccessionMath.calculerDemembrement(
-        _montantDon,
-        ageUsufruitier: _ageUsufruitier.toInt(),
+        state.montantDon,
+        ageUsufruitier: state.ageUsufruitier.toInt(),
         anneesTemporaire: null,
       );
       baseTaxable = demembrement['nueProprieteValeur']!;
     }
 
     var result = SuccessionMath.calculerDonation(
-      lienParente: widget.lien,
+      lienParente: lien,
       montantDon: baseTaxable,
-      isSujetHandicap: _isHandicap,
-      donsPasse15Ans: widget.historiqueDons,
-      exonFamiliale790G: _exonFamiliale,
-      exonLogement790ABis: _exonLogement,
+      isSujetHandicap: state.isHandicapDon,
+      donsPasse15Ans: historiqueDons,
+      exonFamiliale790G: state.exonFamiliale,
+      exonLogement790ABis: state.exonLogement,
     );
 
     return Column(
@@ -74,60 +58,40 @@ class _DonationViewState extends State<DonationView> {
               const CardHeader(title: 'La Donation', subtitle: 'Transmettre de son vivant'),
               SimSlider(
                 label: 'Valeur du bien / montant donné',
-                value: euro(_montantDon),
+                value: euro(state.montantDon),
                 min: 1000,
                 max: 1000000,
-                current: _montantDon,
-                onChanged: (v) => setState(() {
-                  _montantDon = v;
-                  _donationAjoutee = false;
-                }),
+                current: state.montantDon,
+                onChanged: (v) => state.setMontantDon(v),
               ),
               const SizedBox(height: 4),
               SimSwitchRow(
                 label: 'Donner uniquement la nue-propriété (réserve d\'usufruit)',
-                note: 'Vous conservez l\'usage du bien ; seule la nue-propriété est transmise et taxée, selon le barème de l\'article 669 du CGI (celui de l\'onglet Démembrement).',
-                value: _demembrementActif,
-                onChanged: (v) => setState(() {
-                  _demembrementActif = v;
-                  _donationAjoutee = false;
-                }),
+                note: 'Vous conservez l\'usage du bien ; seule la nue-propriété est transmise et taxée.',
+                value: state.demembrementActif,
+                onChanged: (v) => state.setDemembrementActif(v),
               ),
-              if (_demembrementActif) ...[
+              if (state.demembrementActif) ...[
                 SimSlider(
                   label: 'Âge de l\'usufruitier (vous)',
-                  value: '${_ageUsufruitier.toInt()} ans',
+                  value: '${state.ageUsufruitier.toInt()} ans',
                   min: 0,
                   max: 100,
-                  current: _ageUsufruitier,
+                  current: state.ageUsufruitier,
                   divisions: 100,
-                  onChanged: (v) => setState(() {
-                    _ageUsufruitier = v;
-                    _donationAjoutee = false;
-                  }),
+                  onChanged: (v) => state.setAgeUsufruitier(v),
                 ),
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(color: SimColors.paper2, borderRadius: BorderRadius.circular(8)),
                   child: Text(
-                    'Valeur en pleine propriété : ${euro(_montantDon)} → nue-propriété taxée : ${euro(baseTaxable)} '
+                    'Valeur en pleine propriété : ${euro(state.montantDon)} → nue-propriété taxée : ${euro(baseTaxable)} '
                     '(${pct(demembrement!['nueProprietePct']! * 100, 0)} de la valeur totale à cet âge).',
                     style: const TextStyle(fontSize: 12.5, height: 1.5, color: SimColors.text),
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('Historique des dons (règle des 15 ans)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  InfoTooltip(message: "Défini une seule fois dans le bloc « Contexte de la transmission », partagé avec l'onglet Succession."),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('Déjà utilisé sur les 15 dernières années : ${euro(widget.historiqueDons)}',
-                  style: const TextStyle(fontSize: 13, color: SimColors.muted)),
               const SizedBox(height: 16),
               const Text('Cas particuliers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
@@ -135,9 +99,9 @@ class _DonationViewState extends State<DonationView> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _chip('Sujet en situation de handicap', _isHandicap, (v) => setState(() => _isHandicap = v)),
-                  _chip('Dons familiaux d\'argent (Art. 790 G)', _exonFamiliale, (v) => setState(() => _exonFamiliale = v)),
-                  _chip('Logement / Énergie (Art. 790 A bis)', _exonLogement, (v) => setState(() => _exonLogement = v)),
+                  SimChip(label: 'Sujet en situation de handicap', checked: state.isHandicapDon, onChanged: (v) => state.setIsHandicapDon(v)),
+                  SimChip(label: 'Dons familiaux d\'argent (Art. 790 G)', checked: state.exonFamiliale, onChanged: (v) => state.setExonFamiliale(v)),
+                  SimChip(label: 'Logement / Énergie (Art. 790 A bis)', checked: state.exonLogement, onChanged: (v) => state.setExonLogement(v)),
                 ],
               ),
             ],
@@ -148,19 +112,12 @@ class _DonationViewState extends State<DonationView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CardHeader(
-                title: 'Droits de donation estimés',
-                subtitle: 'Montant à payer au Trésor Public',
-                titleColor: SimColors.heroText,
-              ),
-              Text(
-                euro(result.droitsEstimes),
-                style: const TextStyle(fontFamily: 'Fraunces', fontSize: 44, fontWeight: FontWeight.w600, color: SimColors.brassLight),
-              ),
+              const CardHeader(title: 'Droits de donation', subtitle: 'Montant estimé à payer', titleColor: SimColors.heroText),
+              Text(euro(result.droitsEstimes), style: const TextStyle(fontFamily: 'Fraunces', fontSize: 44, fontWeight: FontWeight.w600, color: SimColors.brassLight)),
               const SizedBox(height: 16),
               Container(height: 1, color: Colors.white.withAlpha(30)),
               const SizedBox(height: 12),
-              _buildStep(_demembrementActif ? 'Base taxable (nue-propriété)' : 'Montant brut donné', euro(result.actifBrut)),
+              _buildStep(state.demembrementActif ? 'Base taxable (nue-propriété)' : 'Montant brut donné', euro(result.actifBrut)),
               if (result.etapesAbattements.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Text('Abattements & exonérations appliqués :', style: TextStyle(fontSize: 12, color: SimColors.resultSub, fontWeight: FontWeight.w600)),
@@ -177,10 +134,7 @@ class _DonationViewState extends State<DonationView> {
                               Flexible(child: Text('- ${etape.label}', style: const TextStyle(fontSize: 12.5, color: SimColors.resultSub))),
                               if (etape.source != null) ...[
                                 const SizedBox(width: 6),
-                                Tooltip(
-                                  message: etape.source!,
-                                  child: const Icon(Icons.info_outline, size: 14, color: SimColors.resultSub),
-                                ),
+                                Tooltip(message: etape.source!, child: const Icon(Icons.info_outline, size: 14, color: SimColors.resultSub)),
                               ],
                             ],
                           ),
@@ -191,7 +145,7 @@ class _DonationViewState extends State<DonationView> {
                   ),
               ],
               const SizedBox(height: 12),
-              _buildStep('Base taxable', euro(result.actifNetImposable)),
+              _buildStep('Base taxable nette', euro(result.actifNetImposable)),
               if (result.detailTranches.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Text('Détail de l\'imposition :', style: TextStyle(fontSize: 12, color: SimColors.resultSub, fontWeight: FontWeight.w600)),
@@ -225,23 +179,62 @@ class _DonationViewState extends State<DonationView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SimCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CardHeader(title: 'Historique des dons', subtitle: 'Pour le calcul de la règle des 15 ans'),
+              if (donations.isNotEmpty) ...[
+                for (var don in donations)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: don.estDansLes15Ans ? SimColors.safe.withAlpha(20) : SimColors.paper2, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(euro(don.montant), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('Année ${don.annee}${don.estDansLes15Ans ? ' (Moins de 15 ans)' : ' (Plus de 15 ans)'}', style: TextStyle(fontSize: 12, color: don.estDansLes15Ans ? SimColors.safe : SimColors.muted)),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18, color: SimColors.resultSub),
+                          onPressed: () => onDonationSupprimee(don),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 12),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: SimSlider(
+                      label: 'Année du don',
+                      value: '${state.anneeDon}',
+                      min: 1990,
+                      max: DateTime.now().year.toDouble(),
+                      current: state.anneeDon.toDouble(),
+                      divisions: DateTime.now().year - 1990,
+                      onChanged: (v) => state.setAnneeDon(v.toInt()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _donationAjoutee
-                      ? null
-                      : () {
-                          widget.onDonationSimulee(_montantDon);
-                          setState(() => _donationAjoutee = true);
-                        },
-                  icon: Icon(_donationAjoutee ? Icons.check : Icons.add, size: 16, color: SimColors.heroText),
-                  label: Text(
-                    _donationAjoutee
-                        ? 'Ajoutée à l\'historique des 15 ans'
-                        : 'Reporter cette donation dans l\'historique (pour la succession)',
-                    style: const TextStyle(color: SimColors.heroText, fontSize: 12.5),
-                  ),
+                  onPressed: () => onDonationSimulee(state.montantDon, state.anneeDon),
+                  icon: const Icon(Icons.add, size: 16, color: SimColors.heroText),
+                  label: const Text('Ajouter cette donation', style: TextStyle(color: SimColors.heroText, fontSize: 12.5)),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: SimColors.brassLight.withAlpha(150)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -262,25 +255,6 @@ class _DonationViewState extends State<DonationView> {
         Text(label, style: const TextStyle(fontSize: 13, color: SimColors.heroText)),
         Text(value, style: const TextStyle(fontSize: 13, color: SimColors.heroText, fontWeight: FontWeight.bold)),
       ],
-    );
-  }
-
-  Widget _chip(String label, bool checked, ValueChanged<bool> onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!checked),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: checked ? SimColors.ink.withAlpha(10) : Colors.white,
-          border: Border.all(color: checked ? SimColors.ink : SimColors.line),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(checked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: SimColors.ink),
-          const SizedBox(width: 6),
-          Flexible(child: Text(label, style: const TextStyle(fontSize: 13))),
-        ]),
-      ),
     );
   }
 }

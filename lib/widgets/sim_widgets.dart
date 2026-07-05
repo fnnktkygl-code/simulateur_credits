@@ -46,7 +46,13 @@ class SimSlider extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(value, style: numStyle(color: SimColors.brass)),
+              EditableTextValue(
+                displayValue: value,
+                current: current,
+                min: min,
+                max: max,
+                onChanged: onChanged,
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -58,6 +64,7 @@ class SimSlider extends StatelessWidget {
               max: max,
               divisions: divisions,
               onChanged: onChanged,
+              semanticFormatterCallback: (v) => value,
             ),
           ),
           if (note != null)
@@ -66,6 +73,113 @@ class SimSlider extends StatelessWidget {
               child: Text(note!, style: const TextStyle(fontSize: 12.5, color: SimColors.muted, height: 1.5)),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class EditableTextValue extends StatefulWidget {
+  final String displayValue;
+  final double current;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+
+  const EditableTextValue({
+    super.key,
+    required this.displayValue,
+    required this.current,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  @override
+  State<EditableTextValue> createState() => _EditableTextValueState();
+}
+
+class _EditableTextValueState extends State<EditableTextValue> {
+  bool _isEditing = false;
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.current.toStringAsFixed(widget.current == widget.current.truncateToDouble() ? 0 : 2));
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) {
+        _submit();
+      }
+    });
+  }
+  
+  @override
+  void didUpdateWidget(EditableTextValue oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isEditing && oldWidget.current != widget.current) {
+      _controller.text = widget.current.toStringAsFixed(widget.current == widget.current.truncateToDouble() ? 0 : 2);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    setState(() => _isEditing = false);
+    final val = double.tryParse(_controller.text.replaceAll(',', '.'));
+    if (val != null) {
+      widget.onChanged(val.clamp(widget.min, widget.max));
+    } else {
+      _controller.text = widget.current.toStringAsFixed(widget.current == widget.current.truncateToDouble() ? 0 : 2);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isEditing) {
+      return SizedBox(
+        width: 100,
+        height: 24,
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: numStyle(color: SimColors.brass, size: 16),
+          textAlign: TextAlign.right,
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            border: InputBorder.none,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() => _isEditing = true);
+        _focusNode.requestFocus();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: SimColors.brassLight.withAlpha(20),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.displayValue, style: numStyle(color: SimColors.brass)),
+            const SizedBox(width: 4),
+            const Icon(Icons.edit, size: 12, color: SimColors.brassLight),
+          ],
+        ),
       ),
     );
   }
@@ -209,39 +323,43 @@ class UsureGauge extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 6),
-        SizedBox(
-          height: 16,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Track
-              Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  color: SimColors.paper2,
-                  border: Border.all(color: SimColors.line),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              // Fill
-              FractionallySizedBox(
-                widthFactor: taegPct / 100,
-                child: Container(
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: over ? SimColors.danger : (taeg > cap * 0.9 ? SimColors.warn : SimColors.safe),
-                    borderRadius: BorderRadius.circular(6),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              height: 16,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Track
+                  Container(
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: SimColors.paper2,
+                      border: Border.all(color: SimColors.line),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
-                ),
+                  // Fill
+                  FractionallySizedBox(
+                    widthFactor: taegPct / 100,
+                    child: Container(
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: over ? SimColors.danger : (taeg > cap * 0.9 ? SimColors.warn : SimColors.safe),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                  // Cap marker
+                  Positioned(
+                    left: capPct / 100 * constraints.maxWidth - 1,
+                    top: -3,
+                    child: Container(width: 2, height: 16, color: SimColors.ink),
+                  ),
+                ],
               ),
-              // Cap marker
-              Positioned(
-                left: capPct / 100 * (MediaQuery.of(context).size.width - 88) - 1,
-                top: -3,
-                child: Container(width: 2, height: 16, color: SimColors.ink),
-              ),
-            ],
-          ),
+            );
+          }
         ),
         const SizedBox(height: 6),
         Row(
@@ -253,6 +371,35 @@ class UsureGauge extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// A shared selectable chip.
+class SimChip extends StatelessWidget {
+  final String label;
+  final bool checked;
+  final ValueChanged<bool> onChanged;
+
+  const SimChip({super.key, required this.label, required this.checked, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!checked),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: checked ? SimColors.ink.withAlpha(10) : Colors.white,
+          border: Border.all(color: checked ? SimColors.ink : SimColors.line),
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(checked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: SimColors.ink),
+          const SizedBox(width: 6),
+          Flexible(child: Text(label, style: const TextStyle(fontSize: 13))),
+        ]),
+      ),
     );
   }
 }
@@ -485,6 +632,35 @@ class SimulatorPageHeader extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A small inline badge (chip) for statuses or labels.
+class SimBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const SimBadge({super.key, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(34),
+        border: Border.all(color: color.withAlpha(85)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label, 
+        style: TextStyle(
+          fontSize: 11.5, 
+          fontWeight: FontWeight.w600, 
+          color: color, 
+          fontFamily: 'IBMPlexMono'
         ),
       ),
     );

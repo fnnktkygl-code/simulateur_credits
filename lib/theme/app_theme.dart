@@ -95,10 +95,23 @@ class _BrassThumb extends SliderComponentShape {
       required double textScaleFactor,
       required Size sizeWithOverflow}) {
     final canvas = context.canvas;
+    
+    // Scale up slightly when pressed
+    final scale = 1.0 + (activationAnimation.value * 0.15);
+    final currentRadius = 9.0 * scale;
+
+    // Shadow
+    if (activationAnimation.value > 0) {
+      final shadowPaint = Paint()
+        ..color = SimColors.brassLight.withAlpha((80 * activationAnimation.value).toInt())
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 * activationAnimation.value);
+      canvas.drawCircle(center, currentRadius + 2, shadowPaint);
+    }
+
     // Border
-    canvas.drawCircle(center, 9, Paint()..color = SimColors.brassLight);
+    canvas.drawCircle(center, currentRadius, Paint()..color = SimColors.brassLight);
     // Inner
-    canvas.drawCircle(center, 6, Paint()..color = SimColors.ink);
+    canvas.drawCircle(center, 6.0 * scale, Paint()..color = SimColors.ink);
   }
 }
 

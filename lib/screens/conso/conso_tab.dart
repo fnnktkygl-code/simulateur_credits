@@ -1,134 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/credit_math.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
+import '../../state/app_state.dart';
+import '../../config/taux_config.dart';
 
-class ConsoScreen extends StatefulWidget {
+class ConsoScreen extends StatelessWidget {
   const ConsoScreen({super.key});
-  @override
-  State<ConsoScreen> createState() => _ConsoScreenState();
-}
-
-class _ConsoScreenState extends State<ConsoScreen> {
-
-  double _capital = 8000;
-  int _duration = 36;
-  double _rate = 5.5;
-  double _fees = 80;
-  double _ins = 0;
 
   @override
   Widget build(BuildContext context) {
-    final n = _duration;
-    final monthlyRate = _rate / 100 / 12;
-    final mensHorsAss = annuityPayment(_capital, monthlyRate, n);
-    final mensAss = _capital * (_ins / 100) / 12;
+    final state = context.watch<ConsoState>();
+    final n = state.duration;
+    
+    final mensHorsAss = annuityPayment(state.amount, (state.rate / 100) / 12, n);
+    final mensAss = state.amount * (state.ins / 100) / 12;
     final mensTotal = mensHorsAss + mensAss;
-    final totalPaidHorsAss = mensHorsAss * n;
-    final totalInterest = totalPaidHorsAss - _capital;
+
+    final totalInterest = mensHorsAss * n - state.amount;
     final totalAss = mensAss * n;
-    final totalCost = totalInterest + totalAss + _fees;
-    final netAdvanced = _capital - _fees;
+    final totalCost = totalInterest + totalAss + state.fees;
+    final netAdvanced = state.amount - state.fees;
     final taeg = solveTAEG(netAdvanced, mensTotal, n);
-    final cap = consoUsureCap(_capital);
-    final over = (taeg ?? 0) > cap;
+    final cap = TauxConfig.consoUsureCap(state.amount);
+    final isUsureError = taeg != null && taeg > cap;
 
     return Scaffold(
       backgroundColor: SimColors.paper,
-      appBar: AppBar(
-        backgroundColor: SimColors.ink,
-        elevation: 0,
-        leading: const BackButton(color: SimColors.brassLight),
-      ),
+      appBar: AppBar(backgroundColor: SimColors.ink, elevation: 0, leading: const BackButton(color: SimColors.brassLight)),
       body: Column(
         children: [
           const SimulatorPageHeader(
-            title: '23,56 %, 15,87 % ou 8,67 % : le plafond dépend de votre montant.',
-            description: 'Le taux d\'usure d\'un crédit conso dépend de la tranche de montant emprunté. Vérifiez en un coup d\'œil si le taux proposé est légalement possible.',
+            title: 'Votre projet, financé simplement.',
+            description: 'Ajustez votre montant et votre durée pour trouver la mensualité idéale, sans mauvaises surprises.',
           ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-        SimCard(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CardHeader(title: 'Votre projet conso', subtitle: 'Pour financer des travaux, un mariage, etc.'),
-            SimSlider(label: 'Montant emprunté', value: euro(_capital), min: 500, max: 75000, current: _capital, divisions: 745, onChanged: (v) => setState(() => _capital = v)),
-            Container(
-              margin: const EdgeInsets.only(bottom: 18),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: SimColors.paper2, borderRadius: BorderRadius.circular(6)),
-              child: RichText(text: TextSpan(
-                style: const TextStyle(fontSize: 12.5, color: SimColors.text, fontFamily: 'Inter'),
-                children: [
-                  const TextSpan(text: 'Tranche : '),
-                  TextSpan(text: consoTrancheLabel(_capital), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const TextSpan(text: ' — plafond légal : '),
-                  TextSpan(text: pct(cap), style: const TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              )),
-            ),
-            SimSlider(
-              label: 'Durée',
-              value: '$_duration mois (${(_duration / 12).toStringAsFixed(_duration % 12 != 0 ? 1 : 0)} an${_duration > 12 ? 's' : ''})',
-              min: 6, max: 120, current: _duration.toDouble(), divisions: 114,
-              onChanged: (v) => setState(() => _duration = v.round()),
-            ),
-            SimSlider(
-              label: 'Taux nominal',
-              value: pct(_rate), min: 0.5, max: 22, current: _rate, divisions: 430,
-              onChanged: (v) => setState(() => _rate = v),
-              note: 'Les taux conso vont de 3 % pour les très bons dossiers à 20 % pour les petits montants sans garantie.',
-            ),
-            SimSlider(label: 'Frais de dossier', value: euro(_fees), min: 0, max: 200, current: _fees, divisions: 40, onChanged: (v) => setState(() => _fees = v)),
-            SimSlider(label: 'Assurance (facultative)', value: pct(_ins), min: 0, max: 1, current: _ins, divisions: 100, onChanged: (v) => setState(() => _ins = v)),
-          ],
-        )),
-        const SizedBox(height: 16),
-
-        ResultCard(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CardHeader(title: 'Coût du crédit', subtitle: 'Ce que vous paierez en plus du capital', titleColor: SimColors.heroText),
-            Text(taeg != null ? pct(taeg) : '—', style: const TextStyle(fontFamily: 'Fraunces', fontSize: 44, fontWeight: FontWeight.w600, color: SimColors.brassLight)),
-            const Text('TAEG', style: TextStyle(fontSize: 12.5, color: SimColors.resultSub)),
-            const SizedBox(height: 16),
-            Container(height: 1, color: Colors.white.withAlpha(30)),
-            ResultRow(label: 'Mensualité', value: euro2(mensTotal)),
-            ResultRow(label: 'Coût des intérêts', value: euro(totalInterest)),
-            ResultRow(label: 'Coût de l\'assurance', value: euro(totalAss)),
-            ResultRow(label: 'Coût total du crédit', value: euro(totalCost), isTotal: true),
-          ],
-        )),
-        const SizedBox(height: 16),
-
-        SimCard(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CardHeader(title: 'TAEG face au taux d\'usure', subtitle: 'Plafond légal dépendant de votre montant'),
-            UsureGauge(taeg: taeg ?? 0, cap: cap),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: SimColors.paper2, borderRadius: BorderRadius.circular(10)),
-              child: Text(
-                over
-                    ? 'Votre TAEG (${pct(taeg ?? 0)}) dépasse le taux d\'usure de la tranche ${consoTrancheLabel(_capital)} (${pct(cap)}). Ce prêt ne peut pas vous être accordé tel quel.'
-                    : 'Votre TAEG (${pct(taeg ?? 0)}) reste sous le plafond de ${pct(cap)}. Marge : ${pct(cap - (taeg ?? 0))}.',
-                style: TextStyle(fontSize: 13.5, height: 1.6, color: over ? SimColors.danger : SimColors.text),
-              ),
-            ),
-          ],
-        )),
-        const SizedBox(height: 16),
-        const GlossaryCard(items: [
-          GlossaryItem(term: 'Crédit à la consommation', definition: 'Prêt non affecté (prêt personnel) ou affecté (pour un bien précis), hors immobilier, limité à 75 000 €.'),
-          GlossaryItem(term: 'Taux d\'usure dégressif', definition: 'Contrairement à l\'immobilier, plus vous empruntez petit, plus la banque a le droit de facturer cher (jusqu\'à 23,56 % sous 3000 €).'),
-        ]),
-        const SizedBox(height: 40),
-      ],
+                SimCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const CardHeader(title: 'Le Projet', subtitle: 'Montant et durée'),
+                      SimSlider(
+                        label: 'Montant emprunté',
+                        value: euro(state.amount),
+                        min: 500,
+                        max: 75000,
+                        current: state.amount,
+                        onChanged: (v) => state.setAmount(v),
+                      ),
+                      const SizedBox(height: 16),
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 12, color: SimColors.text, height: 1.5),
+                          children: [
+                            const TextSpan(text: 'Plafond d\'usure Banque de France pour la tranche '),
+                            TextSpan(text: TauxConfig.consoTrancheLabel(state.amount), style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const TextSpan(text: ' : '),
+                            TextSpan(text: pct(cap), style: const TextStyle(fontWeight: FontWeight.w600, color: SimColors.warn)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SimSlider(
+                        label: 'Durée de remboursement',
+                        value: '${state.duration} mois',
+                        min: 6,
+                        max: 84,
+                        divisions: 78,
+                        current: state.duration.toDouble(),
+                        onChanged: (v) => state.setDuration(v.toInt()),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SimCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const CardHeader(title: 'Le Financement', subtitle: 'Taux et assurance'),
+                      SimSlider(
+                        label: 'Taux débiteur (hors assurance)',
+                        value: pct(state.rate),
+                        min: 0,
+                        max: 22,
+                        current: state.rate,
+                        onChanged: (v) => state.setRate(v),
+                      ),
+                      const SizedBox(height: 12),
+                      SimSlider(
+                        label: 'Assurance (facultative)',
+                        value: pct(state.ins),
+                        min: 0,
+                        max: 1,
+                        current: state.ins,
+                        onChanged: (v) => state.setIns(v),
+                      ),
+                      const SizedBox(height: 12),
+                      SimSlider(
+                        label: 'Frais de dossier',
+                        value: euro(state.fees),
+                        min: 0,
+                        max: 1000,
+                        current: state.fees,
+                        onChanged: (v) => state.setFees(v),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (isUsureError)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: SimColors.warn.withAlpha(20), border: Border.all(color: SimColors.warn.withAlpha(100)), borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.gavel, color: SimColors.warn, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Votre TAEG (${pct(taeg)}) dépasse le taux d\'usure de la tranche ${TauxConfig.consoTrancheLabel(state.amount)} (${pct(cap)}). Ce prêt ne peut pas vous être accordé tel quel.',
+                            style: const TextStyle(color: SimColors.warn, fontSize: 13, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                ResultCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const CardHeader(title: 'Bilan', subtitle: 'Mensualité et coût total', titleColor: SimColors.heroText),
+                      Text(euro(mensTotal), style: const TextStyle(fontFamily: 'Fraunces', fontSize: 44, fontWeight: FontWeight.w600, color: SimColors.brassLight)),
+                      const Text(' par mois', style: TextStyle(fontSize: 14, color: SimColors.resultSub)),
+                      const SizedBox(height: 20),
+                      Container(height: 1, color: Colors.white.withAlpha(30)),
+                      const SizedBox(height: 16),
+                      ResultRow(label: 'Montant du projet', value: euro(state.amount)),
+                      ResultRow(label: 'Frais de dossier', value: '+ ${euro(state.fees)}'),
+                      ResultRow(label: 'Intérêts totaux', value: '+ ${euro(totalInterest)}'),
+                      if (state.ins > 0) ResultRow(label: 'Assurance totale', value: '+ ${euro(totalAss)}'),
+                      const SizedBox(height: 12),
+                      Container(height: 1, color: Colors.white.withAlpha(30)),
+                      const SizedBox(height: 16),
+                      ResultRow(label: 'Coût total du crédit', value: euro(totalCost), isTotal: true),
+                      ResultRow(label: 'Montant total dû', value: euro(state.amount + totalCost), isTotal: true),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('TAEG (Taux Annuel Effectif Global)', style: TextStyle(fontSize: 13, color: SimColors.heroText)),
+                          Text(taeg != null ? pct(taeg) : 'Erreur calcul', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isUsureError ? SimColors.warn : SimColors.safe)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ],

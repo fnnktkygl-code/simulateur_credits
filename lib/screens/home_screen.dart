@@ -6,6 +6,8 @@ import 'immo/immo_tab.dart';
 import 'auto/auto_tab.dart';
 import 'conso/conso_tab.dart';
 import 'succession/succession_tab.dart';
+import 'epargne/epargne_screen.dart';
+import 'diagnostic/privacy_consent_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -62,6 +64,14 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                const CategoryHeader(title: 'Votre diagnostic personnalisé'),
+                SimulatorTile(
+                  title: 'Diagnostic Patrimonial IA',
+                  subtitle: 'Découvrez les optimisations fiscales adaptées à votre profil',
+                  icon: Icons.auto_awesome,
+                  onTap: () => _navigateTo(context, const PrivacyConsentPage()),
+                ),
+                const SizedBox(height: 24),
                 const CategoryHeader(title: 'Emprunter & Financer'),
                 GridView.count(
                   crossAxisCount: _getCrossAxisCount(context),
@@ -94,6 +104,24 @@ class HomeScreen extends StatelessWidget {
                       subtitle: 'Prêt personnel, plafonds par tranche',
                       icon: Icons.credit_card_rounded,
                       onTap: () => _navigateTo(context, const ConsoScreen()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const CategoryHeader(title: 'Valoriser & Placer son épargne'),
+                GridView.count(
+                  crossAxisCount: _getCrossAxisCount(context),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.2,
+                  children: [
+                    SimulatorTile(
+                      title: 'Épargne & Placements',
+                      subtitle: 'PEA, Assurance-Vie (rachat/décès), PER',
+                      icon: Icons.savings_rounded,
+                      onTap: () => _navigateTo(context, const EpargneScreen()),
                     ),
                   ],
                 ),

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/fiscalite/baremes_succession_donation.dart';
+import '../../models/fiscalite/donation_entry.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/sim_widgets.dart';
+import '../../state/app_state.dart';
 import 'donation_view.dart';
 import 'succession_view.dart';
 
-class SuccessionScreen extends StatefulWidget {
+class SuccessionScreen extends StatelessWidget {
   const SuccessionScreen({super.key});
-  @override
-  State<SuccessionScreen> createState() => _SuccessionScreenState();
-}
 
-class _SuccessionScreenState extends State<SuccessionScreen> {
-  int _mode = 0; // 0=Donation, 1=Succession
-  LienParente _lienParente = LienParente.enfant;
-  double _historiqueDons = 0;
+  double _historiqueDons15Ans(SuccessionState state) {
+    return state.donations
+        .where((d) => d.estDansLes15Ans)
+        .fold(0.0, (sum, d) => sum + d.montant);
+  }
 
-  final Map<LienParente, String> _lienLabels = {
+  static const Map<LienParente, String> _lienLabels = {
     LienParente.enfant: 'Enfant',
     LienParente.petitEnfant: 'Petit-enfant',
     LienParente.arrierePetitEnfant: 'Arrière-petit-enfant',
@@ -28,6 +29,8 @@ class _SuccessionScreenState extends State<SuccessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<SuccessionState>();
+
     return Scaffold(
       backgroundColor: SimColors.paper,
       appBar: AppBar(
@@ -57,13 +60,13 @@ class _SuccessionScreenState extends State<SuccessionScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<LienParente>(
-                      value: _lienParente,
+                      value: state.lienParente,
                       isExpanded: true,
                       items: LienParente.values.map((l) => DropdownMenuItem(
                         value: l,
                         child: Text(_lienLabels[l]!, style: const TextStyle(fontSize: 14)),
                       )).toList(),
-                      onChanged: (v) => setState(() => _lienParente = v!),
+                      onChanged: (v) => state.setLienParente(v!),
                     ),
                   ),
                 ),
@@ -73,21 +76,25 @@ class _SuccessionScreenState extends State<SuccessionScreen> {
                     ModeOption(title: 'Donation', subtitle: 'De son vivant'),
                     ModeOption(title: 'Succession', subtitle: 'Héritage'),
                   ],
-                  selected: _mode,
-                  onChanged: (i) => setState(() => _mode = i),
+                  selected: state.mode,
+                  onChanged: (i) => state.setMode(i),
                 ),
                 const SizedBox(height: 20),
                 IndexedStack(
-                  index: _mode,
+                  index: state.mode,
                   children: [
                     DonationView(
-                      lien: _lienParente,
-                      historiqueDons: _historiqueDons,
-                      onDonationSimulee: (v) => setState(() => _historiqueDons += v),
+                      lien: state.lienParente,
+                      historiqueDons: _historiqueDons15Ans(state),
+                      donations: state.donations,
+                      onDonationSimulee: (v, annee) => state.addDonation(DonationEntry(montant: v, annee: annee)),
+                      onDonationSupprimee: (DonationEntry entry) => state.removeDonation(entry),
                     ),
                     SuccessionView(
-                      lien: _lienParente,
-                      historiqueDons: _historiqueDons,
+                      lien: state.lienParente,
+                      historiqueDons: _historiqueDons15Ans(state),
+                      donations: state.donations,
+                      onDonationSupprimee: (DonationEntry entry) => state.removeDonation(entry),
                     ),
                   ],
                 ),

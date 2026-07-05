@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/credit_math.dart';
 import '../../core/succession_math.dart';
 import '../../models/fiscalite/baremes_succession_donation.dart';
+import '../../models/fiscalite/donation_entry.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
+import '../../state/app_state.dart';
 
-class SuccessionView extends StatefulWidget {
+class SuccessionView extends StatelessWidget {
   final LienParente lien;
   final double historiqueDons;
+  final List<DonationEntry> donations;
+  final void Function(DonationEntry) onDonationSupprimee;
 
   const SuccessionView({
     super.key,
     required this.lien,
     required this.historiqueDons,
+    required this.donations,
+    required this.onDonationSupprimee,
   });
 
   @override
-  State<SuccessionView> createState() => _SuccessionViewState();
-}
-
-class _SuccessionViewState extends State<SuccessionView> {
-  double _partHeritee = 150000;
-  bool _isHandicap = false;
-
-  @override
   Widget build(BuildContext context) {
+    final state = context.watch<SuccessionState>();
     var result = SuccessionMath.calculerSuccession(
-      lienParente: widget.lien,
-      partHeritee: _partHeritee,
-      isSujetHandicap: _isHandicap,
-      donationsPassees15Ans: widget.historiqueDons,
+      lienParente: lien,
+      partHeritee: state.partHeritee,
+      isSujetHandicap: state.isHandicapSuc,
+      donationsPassees15Ans: historiqueDons,
     );
 
     return Column(
@@ -42,25 +42,14 @@ class _SuccessionViewState extends State<SuccessionView> {
               const CardHeader(title: 'La Succession', subtitle: 'Héritage reçu au décès'),
               SimSlider(
                 label: 'Part nette reçue dans la succession',
-                value: euro(_partHeritee),
+                value: euro(state.partHeritee),
                 min: 0,
                 max: 2000000,
-                current: _partHeritee,
-                onChanged: (v) => setState(() => _partHeritee = v),
+                current: state.partHeritee,
+                onChanged: (v) => state.setPartHeritee(v),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('Historique des dons (règle des 15 ans)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  InfoTooltip(message: "Défini une seule fois dans le bloc « Contexte de la transmission », partagé avec l'onglet Donation."),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('Déjà utilisé sur les 15 dernières années : ${euro(widget.historiqueDons)}',
-                  style: const TextStyle(fontSize: 13, color: SimColors.muted)),
               const SizedBox(height: 16),
-              _chip('Héritier en situation de handicap', _isHandicap, (v) => setState(() => _isHandicap = v)),
+              SimChip(label: 'Héritier en situation de handicap', checked: state.isHandicapSuc, onChanged: (v) => state.setIsHandicapSuc(v)),
             ],
           ),
         ),
@@ -152,6 +141,41 @@ class _SuccessionViewState extends State<SuccessionView> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        SimCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CardHeader(title: 'Historique des dons', subtitle: 'Prise en compte dans la succession'),
+              if (donations.isNotEmpty) ...[
+                for (var don in donations)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: don.estDansLes15Ans ? SimColors.safe.withAlpha(20) : SimColors.paper2, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(euro(don.montant), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('Année ${don.annee}${don.estDansLes15Ans ? ' (Moins de 15 ans)' : ' (Plus de 15 ans)'}', style: TextStyle(fontSize: 12, color: don.estDansLes15Ans ? SimColors.safe : SimColors.muted)),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18, color: SimColors.resultSub),
+                          onPressed: () => onDonationSupprimee(don),
+                        ),
+                      ],
+                    ),
+                  ),
+              ] else ...[
+                const Text('Aucun don enregistré.', style: TextStyle(fontSize: 13, color: SimColors.muted)),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -163,25 +187,6 @@ class _SuccessionViewState extends State<SuccessionView> {
         Text(label, style: const TextStyle(fontSize: 13, color: SimColors.heroText)),
         Text(value, style: const TextStyle(fontSize: 13, color: SimColors.heroText, fontWeight: FontWeight.bold)),
       ],
-    );
-  }
-
-  Widget _chip(String label, bool checked, ValueChanged<bool> onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!checked),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: checked ? SimColors.ink.withAlpha(10) : Colors.white,
-          border: Border.all(color: checked ? SimColors.ink : SimColors.line),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(checked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: SimColors.ink),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 13)),
-        ]),
-      ),
     );
   }
 }
