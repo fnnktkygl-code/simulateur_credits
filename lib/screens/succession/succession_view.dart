@@ -7,7 +7,14 @@ import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
 
 class SuccessionView extends StatefulWidget {
-  const SuccessionView({super.key});
+  final LienParente lien;
+  final double historiqueDons;
+
+  const SuccessionView({
+    super.key,
+    required this.lien,
+    required this.historiqueDons,
+  });
 
   @override
   State<SuccessionView> createState() => _SuccessionViewState();
@@ -15,27 +22,15 @@ class SuccessionView extends StatefulWidget {
 
 class _SuccessionViewState extends State<SuccessionView> {
   double _partHeritee = 150000;
-  LienParente _lienParente = LienParente.enfant;
-  double _donsPasses = 0;
   bool _isHandicap = false;
-
-  final Map<LienParente, String> _lienLabels = {
-    LienParente.enfant: 'Enfant',
-    LienParente.petitEnfant: 'Petit-enfant',
-    LienParente.arrierePetitEnfant: 'Arrière-petit-enfant',
-    LienParente.conjointPacs: 'Conjoint / Partenaire PACS',
-    LienParente.frereSoeur: 'Frère / Sœur',
-    LienParente.neveuNiece: 'Neveu / Nièce',
-    LienParente.tiers: 'Tiers / Autre',
-  };
 
   @override
   Widget build(BuildContext context) {
     var result = SuccessionMath.calculerSuccession(
-      lienParente: _lienParente,
+      lienParente: widget.lien,
       partHeritee: _partHeritee,
       isSujetHandicap: _isHandicap,
-      donationsPassees15Ans: _donsPasses,
+      donationsPassees15Ans: widget.historiqueDons,
     );
 
     return Column(
@@ -45,27 +40,6 @@ class _SuccessionViewState extends State<SuccessionView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const CardHeader(title: 'La Succession', subtitle: 'Héritage reçu au décès'),
-              const Text('Lien de parenté avec le défunt', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: SimColors.line),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<LienParente>(
-                    value: _lienParente,
-                    isExpanded: true,
-                    items: LienParente.values.map((l) => DropdownMenuItem(
-                      value: l,
-                      child: Text(_lienLabels[l]!, style: const TextStyle(fontSize: 14)),
-                    )).toList(),
-                    onChanged: (v) => setState(() => _lienParente = v!),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
               SimSlider(
                 label: 'Part nette reçue dans la succession',
                 value: euro(_partHeritee),
@@ -75,22 +49,17 @@ class _SuccessionViewState extends State<SuccessionView> {
                 onChanged: (v) => setState(() => _partHeritee = v),
               ),
               const SizedBox(height: 8),
-              const Row(
+              Row(
                 children: [
-                  Text('Historique des donations', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  SizedBox(width: 8),
-                  InfoTooltip(message: "Le calcul des droits de succession tient compte des donations que le défunt vous a consenties de son vivant, si elles datent de moins de 15 ans (règle du rappel fiscal)."),
+                  const Text('Historique des dons (règle des 15 ans)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  InfoTooltip(message: "Défini une seule fois dans le bloc « Contexte de la transmission », partagé avec l'onglet Donation."),
                 ],
               ),
-              const SizedBox(height: 8),
-              SimSlider(
-                label: 'Total des dons reçus du défunt (< 15 ans)',
-                value: euro(_donsPasses),
-                min: 0,
-                max: 500000,
-                current: _donsPasses,
-                onChanged: (v) => setState(() => _donsPasses = v),
-              ),
+              const SizedBox(height: 4),
+              Text('Déjà utilisé sur les 15 dernières années : ${euro(widget.historiqueDons)}',
+                  style: const TextStyle(fontSize: 13, color: SimColors.muted)),
+              const SizedBox(height: 16),
               _chip('Héritier en situation de handicap', _isHandicap, (v) => setState(() => _isHandicap = v)),
             ],
           ),

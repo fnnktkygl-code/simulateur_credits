@@ -71,6 +71,58 @@ class SimSlider extends StatelessWidget {
   }
 }
 
+/// A switch with a label and an optional note
+class SimSwitchRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? note;
+
+  const SimSwitchRow({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.note,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: SimColors.brassLight,
+                activeTrackColor: SimColors.brassLight.withAlpha(50),
+                inactiveThumbColor: SimColors.heroSub,
+                inactiveTrackColor: SimColors.paper2,
+              ),
+            ],
+          ),
+          if (note != null) ...[
+            const SizedBox(height: 4),
+            Text(note!, style: const TextStyle(fontSize: 12.5, color: SimColors.muted, height: 1.4)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Mode toggle button bar (Bourso/Privée, Credit/LOA).
 class ModeToggle extends StatelessWidget {
   final List<ModeOption> options;
