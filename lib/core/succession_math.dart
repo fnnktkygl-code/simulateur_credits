@@ -270,7 +270,7 @@ class SuccessionMath {
 
     // Pour l'affichage, on renvoie les tranches qui correspondent à la succession actuelle
     List<DetailTranche> tranchesAffichees = [];
-    double cumulDroits = 0;
+
     for (int i = 0; i < calcDroitsTotal.tranches.length; i++) {
        var tTotal = calcDroitsTotal.tranches[i];
        var tDon = i < calcDroitsDons.tranches.length ? calcDroitsDons.tranches[i] : null;

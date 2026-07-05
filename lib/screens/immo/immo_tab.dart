@@ -5,15 +5,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
 
-class ImmoTab extends StatefulWidget {
-  const ImmoTab({super.key});
+class ImmoScreen extends StatefulWidget {
+  const ImmoScreen({super.key});
   @override
-  State<ImmoTab> createState() => _ImmoTabState();
+  State<ImmoScreen> createState() => _ImmoScreenState();
 }
 
-class _ImmoTabState extends State<ImmoTab> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+class _ImmoScreenState extends State<ImmoScreen> {
 
   double _capital = 250000;
   int _duration = 240;
@@ -29,7 +27,6 @@ class _ImmoTabState extends State<ImmoTab> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final n = _duration;
     final monthlyRate = _rate / 100 / 12;
     final mensHorsAss = annuityPayment(_capital, monthlyRate, n);
@@ -46,9 +43,23 @@ class _ImmoTabState extends State<ImmoTab> with AutomaticKeepAliveClientMixin {
     final cap = immoUsureCap(n);
     final over = (taeg ?? 0) > cap;
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
+    return Scaffold(
+      backgroundColor: SimColors.paper,
+      appBar: AppBar(
+        backgroundColor: SimColors.ink,
+        elevation: 0,
+        leading: const BackButton(color: SimColors.brassLight),
+      ),
+      body: Column(
+        children: [
+          const SimulatorPageHeader(
+            title: 'Le taux affiché n\'est jamais le prix réel de votre crédit immobilier.',
+            description: 'Frais de dossier, assurance, garantie : tout ça se cache derrière un seul chiffre, le TAEG. Réglez votre projet et voyez s\'il passe sous le plafond légal.',
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
         // Input card
         SimCard(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,6 +194,10 @@ class _ImmoTabState extends State<ImmoTab> with AutomaticKeepAliveClientMixin {
         ]),
         const SizedBox(height: 40),
       ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

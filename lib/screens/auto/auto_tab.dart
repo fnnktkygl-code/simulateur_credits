@@ -4,15 +4,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
 
-class AutoTab extends StatefulWidget {
-  const AutoTab({super.key});
+class AutoScreen extends StatefulWidget {
+  const AutoScreen({super.key});
   @override
-  State<AutoTab> createState() => _AutoTabState();
+  State<AutoScreen> createState() => _AutoScreenState();
 }
 
-class _AutoTabState extends State<AutoTab> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+class _AutoScreenState extends State<AutoScreen> {
 
   int _mode = 0; // 0=credit, 1=loa
   double _price = 22000;
@@ -57,7 +55,6 @@ class _AutoTabState extends State<AutoTab> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final credit = _computeCredit(_isCredit ? _rate : curveLookup(autoCreditRatePoints, _duration.toDouble()));
     final loa = _computeLoa(!_isCredit ? _rate : curveLookup(autoLoaRatePoints, _duration.toDouble()));
     final active = _isCredit ? credit : null;
@@ -66,9 +63,23 @@ class _AutoTabState extends State<AutoTab> with AutomaticKeepAliveClientMixin {
     const cap = 8.67;
     final over = (activeTaeg ?? 0) > cap;
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
+    return Scaffold(
+      backgroundColor: SimColors.paper,
+      appBar: AppBar(
+        backgroundColor: SimColors.ink,
+        elevation: 0,
+        leading: const BackButton(color: SimColors.brassLight),
+      ),
+      body: Column(
+        children: [
+          const SimulatorPageHeader(
+            title: 'Crédit auto ou LOA : lequel vous coûte vraiment le moins cher ?',
+            description: 'La mensualité affichée en concession masque souvent le vrai coût. Comparez un crédit classique et une LOA — TAEG estimé à l\'appui.',
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
         ModeToggle(
           options: const [
             ModeOption(title: 'Crédit auto classique', subtitle: 'Propriétaire dès le 1er jour'),
@@ -185,6 +196,10 @@ class _AutoTabState extends State<AutoTab> with AutomaticKeepAliveClientMixin {
         ]),
         const SizedBox(height: 40),
       ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

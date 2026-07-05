@@ -263,3 +263,170 @@ class InfoTooltip extends StatelessWidget {
     );
   }
 }
+
+/// Header for a category in the dashboard
+class CategoryHeader extends StatelessWidget {
+  final String title;
+  const CategoryHeader({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 32, bottom: 16),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontFamily: 'IBMPlexMono',
+          letterSpacing: 1.5,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: SimColors.brassLight,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tile for a simulator in the dashboard
+class SimulatorTile extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const SimulatorTile({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<SimulatorTile> createState() => _SimulatorTileState();
+}
+
+class _SimulatorTileState extends State<SimulatorTile> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _isHovered ? Colors.white.withAlpha(20) : Colors.white.withAlpha(10),
+            border: Border.all(
+              color: _isHovered ? SimColors.brassLight : Colors.white.withAlpha(35),
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: SimColors.ink,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(widget.icon, color: SimColors.brassLight, size: 24),
+              ),
+              const Spacer(),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontFamily: 'Fraunces',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: SimColors.heroText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.subtitle,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: SimColors.heroSub,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Header for individual simulator pages
+class SimulatorPageHeader extends StatelessWidget {
+  final String title;
+  final String description;
+
+  const SimulatorPageHeader({
+    super.key,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [SimColors.ink, SimColors.ink2],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'SIMULATION PÉDAGOGIQUE — NON CONTRACTUELLE',
+              style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                letterSpacing: 1.5,
+                fontSize: 11,
+                color: SimColors.brassLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Fraunces',
+                fontWeight: FontWeight.w600,
+                fontSize: 28,
+                height: 1.12,
+                color: SimColors.heroText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                color: SimColors.heroSub,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

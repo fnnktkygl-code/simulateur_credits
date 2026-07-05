@@ -4,15 +4,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
 
-class LombardTab extends StatefulWidget {
-  const LombardTab({super.key});
+class LombardScreen extends StatefulWidget {
+  const LombardScreen({super.key});
   @override
-  State<LombardTab> createState() => _LombardTabState();
+  State<LombardScreen> createState() => _LombardScreenState();
 }
 
-class _LombardTabState extends State<LombardTab> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+class _LombardScreenState extends State<LombardScreen> {
 
   int _mode = 0; // 0=bourso, 1=privee
   double _assetValue = 600000;
@@ -61,7 +59,6 @@ class _LombardTabState extends State<LombardTab> with AutomaticKeepAliveClientMi
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final loan = _loanAmount.clamp(0.0, _maxLoan);
     final rate = _rate;
     final quarterly = loan * (rate / 100) / 4;
@@ -70,9 +67,23 @@ class _LombardTabState extends State<LombardTab> with AutomaticKeepAliveClientMi
     final totalDue = loan + totalInterest;
     final finalPayment = loan + quarterly;
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
+    return Scaffold(
+      backgroundColor: SimColors.paper,
+      appBar: AppBar(
+        backgroundColor: SimColors.ink,
+        elevation: 0,
+        leading: const BackButton(color: SimColors.brassLight),
+      ),
+      body: Column(
+        children: [
+          const SimulatorPageHeader(
+            title: 'Combien pourriez-vous emprunter sans vendre un seul titre ?',
+            description: 'Le crédit lombard permet d\'emprunter en mettant vos placements en garantie. Ajustez vos actifs ci-dessous pour voir le taux, le coût et la marge de sécurité.',
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
         // Mode toggle
         ModeToggle(
           options: const [
@@ -226,6 +237,10 @@ class _LombardTabState extends State<LombardTab> with AutomaticKeepAliveClientMi
         ]),
         const SizedBox(height: 40),
       ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

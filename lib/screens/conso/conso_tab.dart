@@ -4,15 +4,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/sim_card.dart';
 import '../../widgets/sim_widgets.dart';
 
-class ConsoTab extends StatefulWidget {
-  const ConsoTab({super.key});
+class ConsoScreen extends StatefulWidget {
+  const ConsoScreen({super.key});
   @override
-  State<ConsoTab> createState() => _ConsoTabState();
+  State<ConsoScreen> createState() => _ConsoScreenState();
 }
 
-class _ConsoTabState extends State<ConsoTab> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+class _ConsoScreenState extends State<ConsoScreen> {
 
   double _capital = 8000;
   int _duration = 36;
@@ -22,7 +20,6 @@ class _ConsoTabState extends State<ConsoTab> with AutomaticKeepAliveClientMixin 
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final n = _duration;
     final monthlyRate = _rate / 100 / 12;
     final mensHorsAss = annuityPayment(_capital, monthlyRate, n);
@@ -37,9 +34,23 @@ class _ConsoTabState extends State<ConsoTab> with AutomaticKeepAliveClientMixin 
     final cap = consoUsureCap(_capital);
     final over = (taeg ?? 0) > cap;
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
+    return Scaffold(
+      backgroundColor: SimColors.paper,
+      appBar: AppBar(
+        backgroundColor: SimColors.ink,
+        elevation: 0,
+        leading: const BackButton(color: SimColors.brassLight),
+      ),
+      body: Column(
+        children: [
+          const SimulatorPageHeader(
+            title: '23,56 %, 15,87 % ou 8,67 % : le plafond dépend de votre montant.',
+            description: 'Le taux d\'usure d\'un crédit conso dépend de la tranche de montant emprunté. Vérifiez en un coup d\'œil si le taux proposé est légalement possible.',
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
         SimCard(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,6 +129,10 @@ class _ConsoTabState extends State<ConsoTab> with AutomaticKeepAliveClientMixin 
         ]),
         const SizedBox(height: 40),
       ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
