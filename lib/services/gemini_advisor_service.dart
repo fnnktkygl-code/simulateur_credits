@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:hive/hive.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/diagnostic/profil_patrimonial.dart';
 import '../core/opportunite_engine.dart';
 
@@ -86,9 +87,10 @@ class GeminiAdvisorService {
 
     final prompt = _buildPrompt(profil, opportunites);
     
-    // Initialize Vertex AI
-    final model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-1.5-flash',
+    // Initialize Gemini Developer API via Firebase AI Logic
+    final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
+    final model = googleAI.generativeModel(
+      model: 'gemini-flash-latest',
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: Schema.object(

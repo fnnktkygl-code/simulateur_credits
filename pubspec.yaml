@@ -38,8 +38,8 @@ dependencies:
   provider: ^6.1.5+1
   firebase_core: ^4.7.0
   firebase_remote_config: ^6.4.0
-  any: ^0.0.0
-  firebase_vertexai: ^2.2.0
+  firebase_auth: ^6.0.0
+  firebase_ai: ^3.0.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   flutter_secure_storage: ^10.3.1
