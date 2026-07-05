@@ -14,7 +14,7 @@ void main() {
     test('Démembrement usufruit viager - 20 ans (90/10)', () {
       var result = SuccessionMath.calculerDemembrement(100000, ageUsufruitier: 20);
       expect(result['usufruitPct'], equals(0.90));
-      expect(result['nueProprietePct'], equals(0.10));
+      expect(result['nueProprietePct'], closeTo(0.10, 0.00001));
     });
 
     test('Démembrement usufruit temporaire - 15 ans', () {
