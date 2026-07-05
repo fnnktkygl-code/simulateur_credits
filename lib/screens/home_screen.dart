@@ -4,6 +4,7 @@ import 'lombard/lombard_tab.dart';
 import 'immo/immo_tab.dart';
 import 'auto/auto_tab.dart';
 import 'conso/conso_tab.dart';
+import 'succession/succession_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _TabMeta('Crédit immobilier', 'TAEG, mensualité, taux d\'usure'),
     _TabMeta('Financer une voiture', 'Crédit auto vs LOA / LLD'),
     _TabMeta('Crédit conso', 'Prêt personnel, plafonds par tranche'),
+    _TabMeta('Transmission', 'Donation, succession, usufruit'),
   ];
 
   static const _heroData = [
@@ -39,12 +41,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       '23,56 %, 15,87 % ou 8,67 % : le plafond dépend de votre montant.',
       'Le taux d\'usure d\'un crédit conso dépend de la tranche de montant emprunté. Vérifiez en un coup d\'œil si le taux proposé est légalement possible.',
     ),
+    _HeroCopy(
+      'Anticipez la transmission de votre patrimoine.',
+      'Simulez les droits de donation ou de succession, intégrez les abattements légaux, et calculez la répartition usufruit / nue-propriété.',
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() => _currentTab = _tabController.index);
@@ -75,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ImmoTab(),
             AutoTab(),
             ConsoTab(),
+            SuccessionTab(),
           ],
         ),
       ),
