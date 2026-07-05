@@ -1,11 +1,11 @@
 {
-    "name": "simulateur_credits",
-    "short_name": "simulateur_credits",
+    "name": "Patrimonia",
+    "short_name": "Patrimonia",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#192028",
     "theme_color": "#192028",
-    "description": "A new Flutter project.",
+    "description": "Patrimonia — Simulateurs & Diagnostic Patrimonial IA",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
